@@ -1,4 +1,6 @@
 require 'octokit'
+require 'csv'
+
 class TeamFitness
   def initialize(repo_name = nil)
     @client = Octokit::Client.new netrc: true
@@ -32,6 +34,18 @@ class TeamFitness
     @comments
   end
 
+  def export_to(filename)
+    CSV.open(filename, 'w') do |csv|
+      @comments.each do |comment|
+        csv << [
+          comment.type,
+          comment.id,
+          comment.body
+          ]
+      end
+    end
+  end
+
   class Comment
     class << self
       def parse_all(resources, type)
@@ -42,6 +56,8 @@ class TeamFitness
         Comment.new(type, id: resource.id, body: resource.body)
       end
     end
+
+    attr_reader :type, :id, :body
 
     def initialize(type, id: nil, body: '')
       @type = type
