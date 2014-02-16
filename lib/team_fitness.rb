@@ -2,6 +2,8 @@ require 'octokit'
 require 'csv'
 
 class TeamFitness
+  attr_reader :pull_requests
+
   def initialize(repo_name = nil)
     @client = Octokit::Client.new netrc: true
     @client.auto_paginate = true
@@ -12,55 +14,52 @@ class TeamFitness
 
     @repo_name = repo_name
     @pull_requests = []
+    @comments = []
   end
 
   def fetch
     # TODO: fetched_atを記憶しておいて、差分だけ取るようにする
     # TODO: pull_requetsはパースした上で格納する
     # 分析対象は現状closedのみ
-    pull_requests = @client.pull_requests(@repo_name, :closed)
+    pr_resources = @client.pull_requests(@repo_name, :closed)
 
-    pull_requests.each do |pr|
-      comments = Comment.parse_all(pr.rels[:comments].get.data, :pull_request)
-      comments.concat Comment.parse_all(pr.rels[:review_comments].get.data, :review)
+    pr_resources.each do |pr_resource|
+      pr = PullRequest.parse(pr_resource)
+      @pull_requests << pr
 
-      commits = pr.rels[:commits].get.data
+      @comments.concat Comment.parse_all(pr_resource.rels[:comments].get.data, :pull_request, pr.number)
+      @comments.concat Comment.parse_all(pr_resource.rels[:review_comments].get.data, :review, pr.number)
+
+      commits = pr_resource.rels[:commits].get.data
       commit_comments = commits.map do |commit|
-        Comment.parse_all(commit.rels[:comments].get.data, :commit)
+        Comment.parse_all(commit.rels[:comments].get.data, :commit, pr.number)
       end.flatten
-      comments.concat commit_comments
-
-      pr.comments = comments
+      @comments.concat commit_comments
     end
-
-    @pull_requests.concat pull_requests
   end
 
   def comments
-    @pull_requests.map(&:comments).flatten
+    @comments
   end
 
-  def comments_with_pr_number
-    @pull_requests.map do |pr|
-      pr.comments.product [pr.number]
-    end.flatten(1)
-  end
+  def export_cvs(to: 'out')
+    comments_filename = to + '.comments.csv'
+    pulls_filename    = to + '.pulls.csv'
 
-  def export_to(filename)
-    CSV.open(filename + '.comments.csv', 'w') do |csv|
-      comments_with_pr_number.each do |comment, number|
+    CSV.open(comments_filename, 'w') do |csv|
+      @comments.each do |comment|
         csv << [
-          comment.type,
           comment.id,
+          comment.type,
           comment.body,
           comment.user,
           comment.created_at,
-          number
+          comment.pr_number
         ]
       end
     end
 
-    CSV.open(filename + '.pulls.csv', 'w') do |csv|
+    CSV.open(pulls_filename, 'w') do |csv|
       @pull_requests.each do |pr|
         csv << [
           pr.number,
@@ -75,47 +74,80 @@ class TeamFitness
     end
   end
 
+  def import_cvs(from: 'out')
+    pulls_filename    = from + '.pulls.csv'
+    comments_filename = from + '.comments.csv'
+
+    CSV.foreach(comments_filename) do |row|
+      keys = %w|type id body user created_at pr_number|.map(&:to_sym)
+      attrs = Hash[keys.zip(row)]
+      @comments << Comment.new(attrs)
+    end
+
+    CSV.foreach(pulls_filename) do |row|
+      keys = %w|number state title user body created_at closed_at|.map(&:to_sym)
+      attrs = Hash[keys.zip(row)]
+      @pull_requests << PullRequest.new(attrs)
+    end
+  end
+
   class Comment
     class << self
-      def parse_all(resources, type)
-        resources.map{ |comment| Comment.parse(comment, type) }
+      def parse_all(resources, type, pr_number)
+        resources.map{ |comment| Comment.parse(comment, type, pr_number) }
       end
 
-      def parse(resource, type)
-        Comment.new(type, resource)
+      def parse(resource, type, pr_number)
+        attrs = {
+          type: type,
+          id: resource.id,
+          body: resource.body,
+          user: resource.user.login,
+          created_at: resource.created_at,
+          pr_number: pr_number
+        }
+        Comment.new(attrs)
       end
     end
 
-    attr_reader :type, :id, :body, :user, :created_at
+    attr_reader :type, :id, :body, :user, :created_at, :pr_number
 
-    def initialize(type, resource)
-      @type = type
-      @id   = resource.id
-      @body = resource.body
-      @user = resource.user.login
-      @created_at = resource.created_at
+    def initialize(attrs)
+      @type = attrs[:type]
+      @id   = attrs[:id]
+      @body = attrs[:body]
+      @user = attrs[:user]
+      @created_at = attrs[:created_at]
+      @pr_number = attrs[:pr_number]
     end
   end
 
   class PullRequest
     class << self
-      def parse_all(resources)
-        resources.map{ |pr| PullRequest.new(pr) }
+      def parse(resource)
+        attrs = {
+          number: resource.number,
+          state: resource.state,
+          title: resource.title,
+          user: resource.user.login,
+          body: resource.body,
+          created_at: resource.created_at,
+          closed_at: resource.closed_at
+        }
+        PullRequest.new(attrs)
       end
-   end
+    end
 
     attr_reader :number, :state, :title, :user, :body, :created_at, :closed_at
-    attr_accessor :comments
 
-    def initialize(resource)
-      @number = resource.number
-      @state = resource.state
-      @title = resource.title
-      @user = resource.user.login
-      @body = resource.body
-      @created_at = resource.created_at
-      @closed_at = resource.closed_at
-      @comments = []
+    def initialize(attrs)
+      @number = attrs[:number]
+      @state = attrs[:state]
+      @title = attrs[:title]
+      @user = attrs[:user]
+      @body = attrs[:body]
+      @created_at = attrs[:created_at]
+      @closed_at = attrs[:closed_at]
     end
   end
 end
