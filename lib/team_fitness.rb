@@ -11,7 +11,6 @@ class TeamFitness
     #       全て取得するように変更する（参考: Octokit::Client#paginate）
 
     @repo_name = repo_name
-    @comments = []
     @pull_requests = []
   end
 
@@ -20,9 +19,8 @@ class TeamFitness
     # TODO: pull_requetsはパースした上で格納する
     # 分析対象は現状closedのみ
     pull_requests = @client.pull_requests(@repo_name, :closed)
-    @pull_requests.concat pull_requests
 
-    new_comments = pull_requests.map do |pr|
+    pull_requests.each do |pr|
       comments = Comment.parse_all(pr.rels[:comments].get.data, :pull_request)
       comments.concat Comment.parse_all(pr.rels[:review_comments].get.data, :review)
 
@@ -32,26 +30,47 @@ class TeamFitness
       end.flatten
       comments.concat commit_comments
 
-      comments
-    end.flatten
+      pr.comments = comments
+    end
 
-    @comments.concat new_comments
+    @pull_requests.concat pull_requests
   end
 
   def comments
-    @comments
+    @pull_requests.map(&:comments).flatten
+  end
+
+  def comments_with_pr_number
+    @pull_requests.map do |pr|
+      pr.comments.product [pr.number]
+    end.flatten(1)
   end
 
   def export_to(filename)
-    CSV.open(filename, 'w') do |csv|
-      @comments.each do |comment|
+    CSV.open(filename + '.comments.csv', 'w') do |csv|
+      comments_with_pr_number.each do |comment, number|
         csv << [
           comment.type,
           comment.id,
           comment.body,
           comment.user,
-          comment.created_at
-          ]
+          comment.created_at,
+          number
+        ]
+      end
+    end
+
+    CSV.open(filename + '.pulls.csv', 'w') do |csv|
+      @pull_requests.each do |pr|
+        csv << [
+          pr.number,
+          pr.state,
+          pr.title,
+          pr.user,
+          pr.body,
+          pr.created_at,
+          pr.closed_at
+        ]
       end
     end
   end
@@ -75,6 +94,28 @@ class TeamFitness
       @body = resource.body
       @user = resource.user.login
       @created_at = resource.created_at
+    end
+  end
+
+  class PullRequest
+    class << self
+      def parse_all(resources)
+        resources.map{ |pr| PullRequest.new(pr) }
+      end
+   end
+
+    attr_reader :number, :state, :title, :user, :body, :created_at, :closed_at
+    attr_accessor :comments
+
+    def initialize(resource)
+      @number = resource.number
+      @state = resource.state
+      @title = resource.title
+      @user = resource.user.login
+      @body = resource.body
+      @created_at = resource.created_at
+      @closed_at = resource.closed_at
+      @comments = []
     end
   end
 end
