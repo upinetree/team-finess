@@ -48,7 +48,9 @@ class TeamFitness
         csv << [
           comment.type,
           comment.id,
-          comment.body
+          comment.body,
+          comment.user,
+          comment.created_at
           ]
       end
     end
@@ -61,16 +63,18 @@ class TeamFitness
       end
 
       def parse(resource, type)
-        Comment.new(type, id: resource.id, body: resource.body)
+        Comment.new(type, resource)
       end
     end
 
-    attr_reader :type, :id, :body
+    attr_reader :type, :id, :body, :user, :created_at
 
-    def initialize(type, id: nil, body: '')
+    def initialize(type, resource)
       @type = type
-      @id = id
-      @body = body
+      @id   = resource.id
+      @body = resource.body
+      @user = resource.user.login
+      @created_at = resource.created_at
     end
   end
 end

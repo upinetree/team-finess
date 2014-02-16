@@ -17,6 +17,8 @@ describe TeamFitness do
         comment = subject.first
         comment.id.should_not be_nil
         comment.body.should_not be_nil
+        comment.user.should_not be_nil
+        comment.created_at.should_not be_nil
       end
     end
   end
