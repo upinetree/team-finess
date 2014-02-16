@@ -15,11 +15,14 @@ class TeamFitness
     @pull_requests = []
   end
 
-  def update
-    # TODO: updated_atを記憶しておいて、差分だけ取るようにする
-    @pull_requests.concat @client.pull_requests(@repo_name)
+  def fetch
+    # TODO: fetched_atを記憶しておいて、差分だけ取るようにする
+    # TODO: pull_requetsはパースした上で格納する
+    # 分析対象は現状closedのみ
+    pull_requests = @client.pull_requests(@repo_name, :closed)
+    @pull_requests.concat pull_requests
 
-    new_comments = @pull_requests.map do |pr|
+    new_comments = pull_requests.map do |pr|
       comments = Comment.parse_all(pr.rels[:comments].get.data, :pull_request)
       comments.concat Comment.parse_all(pr.rels[:review_comments].get.data, :review)
 

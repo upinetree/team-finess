@@ -6,13 +6,13 @@ describe TeamFitness do
     let(:team_fitness) { TeamFitness.new(repo_name) }
     
     before do
-      team_fitness.update
+      team_fitness.fetch
     end
 
     context 'without option' do
       subject { team_fitness.comments }
       it "has correct comments" do
-        should have(3).comments 
+        should have(6).comments
 
         comment = subject.first
         comment.id.should_not be_nil
