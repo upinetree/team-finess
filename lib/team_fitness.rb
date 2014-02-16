@@ -5,6 +5,11 @@ class TeamFitness
   def initialize(repo_name = nil)
     @client = Octokit::Client.new netrc: true
     @client.auto_paginate = true
+    @client.per_page = 100
+    # auto_paginateが優先される。コメント取得のために設定
+    # TODO: コメントが最大100件を超えるケースが多い場合は
+    #       全て取得するように変更する（参考: Octokit::Client#paginate）
+
     @repo_name = repo_name
     @comments = []
     @pull_requests = []
