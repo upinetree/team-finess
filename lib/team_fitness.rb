@@ -2,7 +2,7 @@ require 'octokit'
 require 'csv'
 
 class TeamFitness
-  attr_reader :pull_requests
+  attr_reader :pull_requests, :comments
 
   def initialize(repo_name = nil)
     @client = Octokit::Client.new netrc: true
@@ -24,22 +24,12 @@ class TeamFitness
     pr_resources = @client.pull_requests(@repo_name, :closed)
 
     pr_resources.each do |pr_resource|
-      pr = PullRequest.parse(pr_resource)
-      @pull_requests << pr
+      @pull_requests << PullRequest.parse(pr_resource)
 
-      @comments.concat Comment.parse_all(pr_resource.rels[:comments].get.data, :pull_request, pr.number)
-      @comments.concat Comment.parse_all(pr_resource.rels[:review_comments].get.data, :review, pr.number)
-
-      commits = pr_resource.rels[:commits].get.data
-      commit_comments = commits.map do |commit|
-        Comment.parse_all(commit.rels[:comments].get.data, :commit, pr.number)
-      end.flatten
-      @comments.concat commit_comments
+      @comments.concat parse_pull_request_comments(pr_resource)
+      @comments.concat parse_files_changed_comments(pr_resource)
+      @comments.concat parse_commit_comments(pr_resource)
     end
-  end
-
-  def comments
-    @comments
   end
 
   def export_cvs(to: 'out')
@@ -89,6 +79,23 @@ class TeamFitness
       attrs = Hash[keys.zip(row)]
       @pull_requests << PullRequest.new(attrs)
     end
+  end
+
+  private
+
+  def parse_pull_request_comments(pr_resource)
+    Comment.parse_all(pr_resource.rels[:comments].get.data, :pull_request, pr_resource.number)
+  end
+
+  def parse_files_changed_comments(pr_resource)
+    Comment.parse_all(pr_resource.rels[:review_comments].get.data, :files_changed, pr_resource.number)
+  end
+
+  def parse_commit_comments(pr_resource)
+    commits = pr_resource.rels[:commits].get.data
+    commit_comments = commits.map do |commit|
+      Comment.parse_all(commit.rels[:comments].get.data, :commit, pr_resource.number)
+    end.flatten
   end
 
   class Comment
