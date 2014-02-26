@@ -32,7 +32,7 @@ class TeamFitness
     end
   end
 
-  def export_cvs_to(filename = 'exported')
+  def export_csv_to(filename = 'exported')
     comments_filename = filename + '.comments.csv'
     pulls_filename    = filename + '.pulls.csv'
 
@@ -64,7 +64,7 @@ class TeamFitness
     end
   end
 
-  def import_cvs_from(filename)
+  def import_csv_from(filename)
     pulls_filename    = filename + '.pulls.csv'
     comments_filename = filename + '.comments.csv'
 
