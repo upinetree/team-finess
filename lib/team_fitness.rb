@@ -101,7 +101,7 @@ class TeamFitness
   class Comment
     class << self
       def parse_all(resources, type, pr_number)
-        resources.map{ |comment| Comment.parse(comment, type, pr_number) }
+        resources.map{ |comment| self.parse(comment, type, pr_number) }
       end
 
       def parse(resource, type, pr_number)
@@ -113,7 +113,7 @@ class TeamFitness
           created_at: resource.created_at,
           pr_number: pr_number
         }
-        Comment.new(attrs)
+        self.new(attrs)
       end
     end
 
@@ -141,7 +141,7 @@ class TeamFitness
           created_at: resource.created_at,
           closed_at: resource.closed_at
         }
-        PullRequest.new(attrs)
+        self.new(attrs)
       end
     end
 
