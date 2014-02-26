@@ -111,13 +111,14 @@ class TeamFitness
           body: resource.body,
           user: resource.user.login,
           created_at: resource.created_at,
-          pr_number: pr_number
+          pr_number: pr_number,
+          target: resource.path
         }
         self.new(attrs)
       end
     end
 
-    attr_reader :type, :id, :body, :user, :created_at, :pr_number
+    attr_reader :type, :id, :body, :user, :created_at, :pr_number, :target
 
     def initialize(attrs)
       @type = attrs[:type]
@@ -126,6 +127,7 @@ class TeamFitness
       @user = attrs[:user]
       @created_at = attrs[:created_at]
       @pr_number = attrs[:pr_number]
+      @target = attrs[:target]
     end
   end
 
