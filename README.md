@@ -30,9 +30,11 @@ Github APIを使って、メトリクスとしてコメント数などを評価�
 
   ```
   fitness = TeamFitness.new('upinetree/team-fitness')
-  fitness.fetch                 #=> PRを取得（現状closedのみ）
-  fitness.comments              #=> コメント取得（PR, Commit, File Changed 全部）
-  fitness.export_to('filename') #=> csv形式で出力
+  fitness.fetch                       #=> PR, コメントを取得（現状closedのPRに紐づくもののみ）
+  fitness.pull_requests               #=> 取得済みのPR
+  fitness.comments                    #=> 取得済みのコメント（PR, Commit, File Changed 全部）
+  fitness.export_csv_to('filename')   #=> csv形式で出力
+  fitness.import_csv_from('filename') #=> csv形式で出力
   ```
 
 
