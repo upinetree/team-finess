@@ -32,9 +32,9 @@ class TeamFitness
     end
   end
 
-  def export_cvs(to: 'out')
-    comments_filename = to + '.comments.csv'
-    pulls_filename    = to + '.pulls.csv'
+  def export_cvs_to(filename = 'exported')
+    comments_filename = filename + '.comments.csv'
+    pulls_filename    = filename + '.pulls.csv'
 
     CSV.open(comments_filename, 'w') do |csv|
       @comments.each do |comment|
@@ -64,9 +64,9 @@ class TeamFitness
     end
   end
 
-  def import_cvs(from: 'out')
-    pulls_filename    = from + '.pulls.csv'
-    comments_filename = from + '.comments.csv'
+  def import_cvs_from(filename)
+    pulls_filename    = filename + '.pulls.csv'
+    comments_filename = filename + '.comments.csv'
 
     CSV.foreach(comments_filename) do |row|
       keys = %w|type id body user created_at pr_number|.map(&:to_sym)
