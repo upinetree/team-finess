@@ -68,13 +68,13 @@ class TeamFitness
     pulls_filename    = filename + '.pulls.csv'
     comments_filename = filename + '.comments.csv'
 
-    CSV.foreach(comments_filename) do |row|
+    CSV.foreach(comments_filename, row_sep: "\n") do |row|
       keys = %w|type id body user created_at pr_number|.map(&:to_sym)
       attrs = Hash[keys.zip(row)]
       @comments << Comment.new(attrs)
     end
 
-    CSV.foreach(pulls_filename) do |row|
+    CSV.foreach(pulls_filename, row_sep: "\n") do |row|
       keys = %w|number state title user body created_at closed_at|.map(&:to_sym)
       attrs = Hash[keys.zip(row)]
       @pull_requests << PullRequest.new(attrs)
