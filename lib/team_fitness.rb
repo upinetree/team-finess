@@ -44,7 +44,8 @@ class TeamFitness
           comment.body,
           comment.user,
           comment.created_at,
-          comment.pr_number
+          comment.pr_number,
+          comment.target
         ]
       end
     end
@@ -69,7 +70,7 @@ class TeamFitness
     comments_filename = filename + '.comments.csv'
 
     CSV.foreach(comments_filename, row_sep: "\n") do |row|
-      keys = %w|type id body user created_at pr_number|.map(&:to_sym)
+      keys = %w|type id body user created_at pr_number target|.map(&:to_sym)
       attrs = Hash[keys.zip(row)]
       @comments << Comment.new(attrs)
     end
