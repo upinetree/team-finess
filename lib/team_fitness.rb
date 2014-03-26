@@ -17,18 +17,23 @@ class TeamFitness
     @comments = []
   end
 
-  def fetch
+  def fetch(sampling_frequency = 1)
     # TODO: fetched_atを記憶しておいて、差分だけ取るようにする
     # TODO: pull_requetsはパースした上で格納する
     # 分析対象は現状closedのみ
     pr_resources = @client.pull_requests(@repo_name, :closed)
+    pr_resources.select!.with_index { |pr, i| i % sampling_frequency == 0 }
+    puts "#{@repo_name}: fetched pull requests"
 
     pr_resources.each do |pr_resource|
-      @pull_requests << PullRequest.parse(pr_resource)
+      pr = PullRequest.parse(pr_resource)
+      next if pr.nil?
+      @pull_requests << pr
 
       @comments.concat parse_pull_request_comments(pr_resource)
       @comments.concat parse_files_changed_comments(pr_resource)
       @comments.concat parse_commit_comments(pr_resource)
+      puts "#{@repo_name}: fetched comments of ##{pull_requests.last.number}"
     end
   end
 
@@ -145,6 +150,8 @@ class TeamFitness
           closed_at: resource.closed_at
         }
         self.new(attrs)
+      rescue
+        puts "error: can't parse a pull request"
       end
     end
 
