@@ -6,7 +6,8 @@
 
 Github APIを使って、メトリクスとしてコメント数などを評価します（予定）。
 
-現状はコメント取得するだけです。
+現状はプルリクとコメント情報取得するだけです。
+リファクタリングとかしてないオレオレスクリプトなので綺麗にしていただけると泣いて喜びます。
 
 
 ## 使い方
@@ -26,7 +27,7 @@ Github APIを使って、メトリクスとしてコメント数などを評価�
     password c0d3b4ssssss!
   ```
 
-3. TeamFitnessを使う
+3. API経由で情報を取得する
 
   ```
   fitness = TeamFitness.new('upinetree/team-fitness')
@@ -36,6 +37,10 @@ Github APIを使って、メトリクスとしてコメント数などを評価�
   fitness.export_csv_to('filename')   #=> csv形式で出力
   fitness.import_csv_from('filename') #=> csv形式で出力
   ```
+
+まとめて取ってくる荒っぽいスクリプトを`script/fetch_batch.rb`に置いたので参考までに。
+
+r言語で可視化するスクリプトは`r`フォルダ配下に置いてあります。
 
 
 ### Two-Factor Authentication の場合
